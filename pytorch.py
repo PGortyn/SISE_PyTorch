@@ -1,14 +1,12 @@
 import torch
 from som import SOM
-from data import Data, WHITE, RED, ALL
+from data import LoadData, WHITE, RED, ALL
 from plotter import PlotLearning
 import argparse
 import ast
 import sys
 
 print("PyTorch version: ", torch.__version__)
-print(torch.cuda.is_available())
-print(torch.version.cuda)
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f'Using {device} device')
 
@@ -16,7 +14,7 @@ def HandleArguments():
     argParser = argparse.ArgumentParser()
     argParser.add_argument("-X", type=ast.literal_eval)
     argParser.add_argument("-Y", type=ast.literal_eval)
-    argParser.add_argument("-wine_type", type=ast.literal_eval)
+    argParser.add_argument("-wine_type", type=str)
     argParser.add_argument("-lr", type=ast.literal_eval, help="LEARNING RATE")
     argParser.add_argument("-sigma", type=ast.literal_eval)
     argParser.add_argument("-epochs", type=ast.literal_eval)
@@ -41,22 +39,20 @@ def HandleArguments():
     err = args.min_error
     if err is None:
         err = 0.001
-    data = Data()
-    tensor, targets = data.LoadData(wineType)
+    tensor, targets = LoadData(wineType)
     som = SOM(sizeX, sizeY, tensor.shape[1], lr, sigma)
     errors = som.Train(tensor, epochs, err)
     hits = som.CreateHitMap(tensor)
     qMap = som.CreateQualityMap(tensor, targets)
     uMatrix = som.CreateUMatrix()
-    PlotLearning(errors, hits, qMap, uMatrix)
+    PlotLearning(errors, hits, qMap, uMatrix, sizeX, sizeY)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         HandleArguments()
     else:
-        data = Data()
-        tensor, targets = data.LoadData(ALL)
-        som = SOM(10, 10, 11)
+        tensor, targets = LoadData(RED)
+        som = SOM(10, 10, tensor.shape[1])
         errors = som.Train(tensor, 50)
         hits = som.CreateHitMap(tensor)
         qMap = som.CreateQualityMap(tensor, targets)

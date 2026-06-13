@@ -3,6 +3,7 @@ import torch
 class SOM:
 
     def __init__(self, width, height, dim, lr = 0.5, sigma = None):
+        torch.manual_seed(2137)
         self.width = width
         self.height = height
         self.inputDim = dim
@@ -41,6 +42,7 @@ class SOM:
     def DecaySigma(self, epoch, maxEpochs):
         s = self.sigma * (1 - epoch / maxEpochs)
         return max(0.5, s)
+        # return s
 
     def QuantizationError(self, data):
         error = 0.0
