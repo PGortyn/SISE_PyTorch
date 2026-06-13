@@ -22,10 +22,12 @@ class SOM:
             sigma = self.DecaySigma(epoch, maxEpochs)
             indices = torch.randperm(len(data))
             shuffled = data[indices]
+            errorData = []
             for sample in shuffled:
                 row, col = self.FindBMU(sample)
                 self.UpdateWeights(sample, row, col, lr, sigma)
-            qe = self.QuantizationError(data)
+                errorData.append([sample, row, col])
+            qe = self.QuantizationError(errorData)
             errors.append(qe)
             print(f'Epoch {epoch + 1} / {maxEpochs}\n  Quantization error: {qe:.4f}')
             if qe <= minError:
@@ -60,8 +62,10 @@ class SOM:
 
     def QuantizationError(self, data):
         error = 0.0
-        for sample in data:
-            row, col = self.FindBMU(sample)
+        for d in data:
+            sample = d[0]
+            row = d[1]
+            col = d[2]
             bmuWeight = self.weights[row, col]
             error += torch.norm(sample - bmuWeight).item()
         return error / len(data)
