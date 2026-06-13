@@ -10,9 +10,11 @@ class SOM:
         self.inputDim = dim
         self.startLR = lr
         if sigma is None:
-            sigma = max(width, height) / 2
+            sigma = (max(width, height) - 1) / 2
         self.startSigma = sigma
-        self.weights = (torch.rand(height, width, dim) * 2) - 1
+        # No point in using weights with values below zero, if all input values are greater than zero
+        # self.weights = (torch.rand(height, width, dim) * 2) - 1
+        self.weights = torch.rand(height, width, dim)
         self.gridX, self.gridY = torch.meshgrid(torch.arange(height), torch.arange(width), indexing="ij")
 
     def Train(self, data, maxEpochs, minError = 0.5):
