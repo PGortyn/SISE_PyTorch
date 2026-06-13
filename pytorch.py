@@ -1,6 +1,6 @@
 import torch
 from som import SOM
-from data import LoadData, WHITE, RED, ALL
+from data import LoadQualityData, LoadOriginData, WHITE, RED, ALL, ORIGIN, QUALITY
 from plotter import PlotLearning
 import argparse
 import ast
@@ -20,6 +20,7 @@ def HandleArguments():
     argParser.add_argument("-epochs", type=ast.literal_eval)
     argParser.add_argument("-min_error", type=ast.literal_eval)
     argParser.add_argument("-seed", type=ast.literal_eval)
+    argParser.add_argument("-data", type=str)
     args = argParser.parse_args()
     sizeX = args.X
     sizeY = args.Y
@@ -42,22 +43,29 @@ def HandleArguments():
     if err is None:
         err = 0.5
     seed = args.seed
-    tensor, targets = LoadData(wineType)
+    dataType = args.data
+    if dataType is None or (dataType != QUALITY and dataType != ORIGIN):
+        dataType = ORIGIN
+    if dataType == QUALITY:
+        tensor, targets = LoadQualityData(wineType)
+    else:
+        tensor, targets = LoadOriginData()
     som = SOM(sizeX, sizeY, tensor.shape[1], lr, sigma, seed)
     errors = som.Train(tensor, epochs, err)
     hits = som.CreateHitMap(tensor)
     qMap = som.CreateQualityMap(tensor, targets)
     uMatrix = som.CreateUMatrix()
-    PlotLearning(errors, hits, qMap, uMatrix, sizeX, sizeY)
+    PlotLearning(errors, hits, qMap, uMatrix, sizeX, sizeY, dataType)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         HandleArguments()
     else:
-        tensor, targets = LoadData(RED)
+        # tensor, targets = LoadQualityData(RED)
+        tensor, targets = LoadOriginData()
         som = SOM(10, 10, tensor.shape[1])
         errors = som.Train(tensor, 50)
         hits = som.CreateHitMap(tensor)
         qMap = som.CreateQualityMap(tensor, targets)
         uMatrix = som.CreateUMatrix()
-        PlotLearning(errors, hits, qMap, uMatrix)
+        PlotLearning(errors, hits, qMap, uMatrix, dataType=ORIGIN)
