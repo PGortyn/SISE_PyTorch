@@ -7,13 +7,14 @@ def MakeEssentialDirs():
     os.makedirs(GRAPH_PATH, exist_ok=True)
 
 def PlotLearning(errors, hits, qualityMap, uMat, x = 8, y = 8):
+    MakeEssentialDirs()
     PlotErrors(errors)
     PlotHits(hits, x, y)
     PlotQuality(qualityMap, x, y)
     PlotUMatrix(uMat, x, y)
+    # plt.show()
 
 def PlotErrors(errors):
-    MakeEssentialDirs()
     plt.plot(errors)
     plt.xlabel("Epoch")
     plt.ylabel("Quantization Error")
@@ -21,7 +22,6 @@ def PlotErrors(errors):
     plt.title("SOM learning curve")
     plt.grid(True)
     plt.savefig(f'{GRAPH_PATH}quantization_error_graph')
-    # plt.show()
 
 def PlotHits(hits, x, y):
     plt.figure(figsize=(x,y))
@@ -29,7 +29,6 @@ def PlotHits(hits, x, y):
     plt.colorbar(label="Number of wines")
     plt.title("SOM hit map")
     plt.savefig(f'{GRAPH_PATH}SOM_hit_map')
-    # plt.show()
 
 def PlotQuality(map, x, y):
     plt.figure(figsize=(x,y))
@@ -37,7 +36,6 @@ def PlotQuality(map, x, y):
     plt.colorbar(label="Average Wine Quality")
     plt.title("Wine Quality SOM Map")
     plt.savefig(f'{GRAPH_PATH}SOM_quality_map')
-    # plt.show()
 
 def PlotUMatrix(uMat, x, y):
     plt.figure(figsize=(x,y))
@@ -45,4 +43,3 @@ def PlotUMatrix(uMat, x, y):
     plt.colorbar(label="Neighbour distance")
     plt.title("SOM U-matrix")
     plt.savefig(f'{GRAPH_PATH}SOM_U_Matrix')
-    plt.show()

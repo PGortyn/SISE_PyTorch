@@ -19,6 +19,7 @@ def HandleArguments():
     argParser.add_argument("-sigma", type=ast.literal_eval)
     argParser.add_argument("-epochs", type=ast.literal_eval)
     argParser.add_argument("-min_error", type=ast.literal_eval)
+    argParser.add_argument("-seed", type=ast.literal_eval)
     args = argParser.parse_args()
     sizeX = args.X
     sizeY = args.Y
@@ -29,6 +30,7 @@ def HandleArguments():
     wineType = args.wine_type
     if wineType != ALL and wineType != WHITE and wineType != RED:
         wineType = ALL
+    print(f'Wine type: {wineType}')
     lr = args.lr
     if lr is None:
         lr = 0.5
@@ -38,9 +40,10 @@ def HandleArguments():
         epochs = 50
     err = args.min_error
     if err is None:
-        err = 0.001
+        err = 0.5
+    seed = args.seed
     tensor, targets = LoadData(wineType)
-    som = SOM(sizeX, sizeY, tensor.shape[1], lr, sigma)
+    som = SOM(sizeX, sizeY, tensor.shape[1], lr, sigma, seed)
     errors = som.Train(tensor, epochs, err)
     hits = som.CreateHitMap(tensor)
     qMap = som.CreateQualityMap(tensor, targets)
