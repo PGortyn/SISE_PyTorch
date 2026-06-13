@@ -1,14 +1,64 @@
 import torch
 from som import SOM
-from data import features
+from data import Data, WHITE, RED, ALL
+from plotter import PlotLearning
+import argparse
+import ast
+import sys
 
 print("PyTorch version: ", torch.__version__)
+print(torch.cuda.is_available())
+print(torch.version.cuda)
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f'Using {device} device')
 
+def HandleArguments():
+    argParser = argparse.ArgumentParser()
+    argParser.add_argument("-X", type=ast.literal_eval)
+    argParser.add_argument("-Y", type=ast.literal_eval)
+    argParser.add_argument("-wine_type", type=ast.literal_eval)
+    argParser.add_argument("-lr", type=ast.literal_eval, help="LEARNING RATE")
+    argParser.add_argument("-sigma", type=ast.literal_eval)
+    argParser.add_argument("-epochs", type=ast.literal_eval)
+    argParser.add_argument("-min_error", type=ast.literal_eval)
+    args = argParser.parse_args()
+    sizeX = args.X
+    sizeY = args.Y
+    if sizeX is None:
+        sizeX = 10
+    if sizeY is None:
+        sizeY = sizeX
+    wineType = args.wine_type
+    if wineType != ALL and wineType != WHITE and wineType != RED:
+        wineType = ALL
+    lr = args.lr
+    if lr is None:
+        lr = 0.5
+    sigma = args.sigma
+    epochs = args.epochs
+    if epochs is None:
+        epochs = 50
+    err = args.min_error
+    if err is None:
+        err = 0.001
+    data = Data()
+    tensor, targets = data.LoadData(wineType)
+    som = SOM(sizeX, sizeY, tensor.shape[1], lr, sigma)
+    errors = som.Train(tensor, epochs, err)
+    hits = som.CreateHitMap(tensor)
+    qMap = som.CreateQualityMap(tensor, targets)
+    uMatrix = som.CreateUMatrix()
+    PlotLearning(errors, hits, qMap, uMatrix)
+
 if __name__ == "__main__":
-    som = SOM(10, 10, 11)
-    loader, tensor, target = som.GetWineDataloader()
-    sample = tensor[0]
-    row, col = som.FindBMU(sample)
-    som.UpdateWeights(sample, row, col, 0.5, 5)
+    if len(sys.argv) > 1:
+        HandleArguments()
+    else:
+        data = Data()
+        tensor, targets = data.LoadData(ALL)
+        som = SOM(10, 10, 11)
+        errors = som.Train(tensor, 50)
+        hits = som.CreateHitMap(tensor)
+        qMap = som.CreateQualityMap(tensor, targets)
+        uMatrix = som.CreateUMatrix()
+        PlotLearning(errors, hits, qMap, uMatrix)

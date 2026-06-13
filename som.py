@@ -1,7 +1,4 @@
 import torch
-from torch import nn, optim
-from data import features, targets
-from torch.utils.data import TensorDataset, DataLoader
 
 class SOM:
 
@@ -38,13 +35,74 @@ class SOM:
         influence = influence.unsqueeze(-1)
         self.weights += lr * influence * (sample - self.weights)
 
-    @staticmethod
-    def GetWineDataloader(batchSize=64):
-        feature_tensor = torch.tensor(features, dtype=torch.float32)
+    def DecayLearningRate(self, epoch, maxEpochs):
+        return self.lr * (1 - epoch / maxEpochs)
 
-        dataset = TensorDataset(feature_tensor)
+    def DecaySigma(self, epoch, maxEpochs):
+        s = self.sigma * (1 - epoch / maxEpochs)
+        return max(0.5, s)
 
-        dataLoader = DataLoader(dataset, batchSize, shuffle=True)
+    def QuantizationError(self, data):
+        error = 0.0
+        for sample in data:
+            row, col = self.FindBMU(sample)
+            bmuWeight = self.weights[row, col]
+            error += torch.norm(sample - bmuWeight).item()
+        return error / len(data)
 
-        return dataLoader, feature_tensor, targets
+    def Train(self, data, epochs, minError = 0.001):
+        errors = []
+        for epoch in range(epochs):
+            lr = self.DecayLearningRate(epoch, epochs)
+            sigma = self.DecaySigma(epoch, epochs)
+            indices = torch.randperm(len(data))
+            shuffled = data[indices]
+            for sample in shuffled:
+                row, col = self.FindBMU(sample)
+                self.UpdateWeights(sample, row, col, lr, sigma)
+            qe = self.QuantizationError(data)
+            errors.append(qe)
+            print(f'Epoch {epoch + 1} / {epochs}\n  Quantization error: {qe:.4f}')
+            if qe <= minError:
+                break
+        return errors
 
+    def CreateHitMap(self, data):
+        hits = torch.zeros(self.height, self.width)
+        for sample in data:
+            row, col = self.FindBMU(sample)
+            hits[row, col] += 1
+
+        return hits
+
+    def CreateQualityMap(self, data, labels):
+        qualitySum = torch.zeros(self.height, self.width)
+        counts = torch.zeros(self.height, self.width)
+        labels = labels.squeeze()
+        for sample, quality in zip(data, labels):
+            row, col = self.FindBMU(sample)
+            qualitySum[row, col] += float(quality)
+            counts[row, col] += 1
+        qualityMap = torch.where(counts > 0, qualitySum / counts, torch.tensor(float("nan")))
+
+        return qualityMap
+
+    def CreateUMatrix(self):
+        uMatrix = torch.zeros(self.height, self.width)
+
+        for row in range(self.height):
+            for col in range(self.width):
+                neighbours = []
+                current = self.weights[row, col]
+                directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+                for dr, dc in directions:
+                    nr = row + dr
+                    nc = col + dc
+                    if 0 <= nr < self.height and 0 <= nc < self.width:
+                        neighbour = self.weights[nr, nc]
+                        dist = torch.norm(current - neighbour)
+                        neighbours.append(dist.item())
+                if neighbours:
+                    uMatrix[row, col] = sum(neighbours) / len(neighbours)
+        return uMatrix
