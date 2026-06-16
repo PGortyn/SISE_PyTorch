@@ -14,13 +14,13 @@ def HandleArguments():
     argParser = argparse.ArgumentParser()
     argParser.add_argument("-X", type=ast.literal_eval)
     argParser.add_argument("-Y", type=ast.literal_eval)
-    argParser.add_argument("-wine_type", type=str)
+    argParser.add_argument("-data", type=str, help="origin (def) | quality")
+    argParser.add_argument("-wine_type", type=str, help="all (def) | red | white")
     argParser.add_argument("-lr", type=ast.literal_eval, help="LEARNING RATE")
     argParser.add_argument("-sigma", type=ast.literal_eval)
     argParser.add_argument("-epochs", type=ast.literal_eval)
     argParser.add_argument("-min_error", type=ast.literal_eval)
     argParser.add_argument("-seed", type=ast.literal_eval)
-    argParser.add_argument("-data", type=str)
     args = argParser.parse_args()
     sizeX = args.X
     sizeY = args.Y
@@ -28,10 +28,17 @@ def HandleArguments():
         sizeX = 10
     if sizeY is None:
         sizeY = sizeX
-    wineType = args.wine_type
-    if wineType != ALL and wineType != WHITE and wineType != RED:
-        wineType = ALL
-    print(f'Wine type: {wineType}')
+    dataType = args.data
+    if dataType is None or (dataType != QUALITY and dataType != ORIGIN):
+        dataType = ORIGIN
+    if dataType == QUALITY:
+        wineType = args.wine_type
+        if wineType != ALL and wineType != WHITE and wineType != RED:
+            wineType = ALL
+        print(f'Wine type: {wineType}')
+        tensor, targets = LoadQualityData(wineType)
+    else:
+        tensor, targets = LoadOriginData()
     lr = args.lr
     if lr is None:
         lr = 0.5
@@ -43,13 +50,6 @@ def HandleArguments():
     if err is None:
         err = 0.5
     seed = args.seed
-    dataType = args.data
-    if dataType is None or (dataType != QUALITY and dataType != ORIGIN):
-        dataType = ORIGIN
-    if dataType == QUALITY:
-        tensor, targets = LoadQualityData(wineType)
-    else:
-        tensor, targets = LoadOriginData()
     som = SOM(sizeX, sizeY, tensor.shape[1], lr, sigma, seed)
     errors = som.Train(tensor, epochs, err)
     hits = som.CreateHitMap(tensor)

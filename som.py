@@ -60,7 +60,7 @@ class SOM:
 
     def DecaySigma(self, epoch, maxEpochs):
         s = self.startSigma * (1 - (epoch / maxEpochs))
-        return max(0.5, s)
+        return max(0.1, s)
 
     def QuantizationError(self, data):
         error = 0.0
